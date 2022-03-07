@@ -2,13 +2,15 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'listener/listener.dart';
 import 'src/captured_data.dart';
 
 class WinTracker{
   WinTracker._() {
     if (Platform.isLinux) {
+
+
+
       // _systemScreenCapturer = SystemScreenCapturerImplLinux();
     } else if (Platform.isMacOS) {
       // _systemScreenCapturer = SystemScreenCapturerImplMacOS();
