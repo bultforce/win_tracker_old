@@ -22,6 +22,7 @@ class _HomePageState extends State<HomePage> {
 
   void _init() async {
     _isAccessAllowed = await WinTracker.instance.isAccessAllowed();
+    WinTracker.init();
     setState(() {});
   }
 
@@ -47,24 +48,25 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _startKeyboardEvent() async {
-    // Directory directory = await getApplicationDocumentsDirectory();
-    // String imageName =
-    //     'Screenshot-${DateTime.now().millisecondsSinceEpoch}.png';
-    // String imagePath =
-    //     '${directory.path}/screen_capturer_example/Screenshots/$imageName';
-    // _lastCapturedData = await ScreenCapturer.instance.capture(
-    //   imagePath: imagePath,
-    //   silent: true,
-    // );
-    // if (_lastCapturedData != null) {
-    //   // ignore: avoid_print
-    //   print(_lastCapturedData!.toJson());
-    // } else {
-    //   // ignore: avoid_print
-    //   print('User canceled capture');
-    // }
     print("on click keyboard start listener");
-    WinTracker.instance.startkeyboardEventCapture(AutoScreenCapture(imgPath: "bhjbjhbhj", intervel: "3"));
+    if(Platform.isWindows){
+      WinTracker.instance.startListening((keyEvent) {
+        print(keyEvent);
+      });
+    }else{
+      WinTracker.instance.startkeyboardEventCapture(AutoScreenCapture(imgPath: "bhjbjhbhj", intervel: "3"));
+    }
+
+  }
+
+  void _stopKeyboardEvent() async {
+    print("on click keyboard stop listener");
+    if(Platform.isWindows){
+      WinTracker.instance.cancelScreenListening();
+    }else{
+      WinTracker.instance.cancelScreenListening();
+    }
+
   }
   Widget _buildBody(BuildContext context) {
     return PreferenceList(
@@ -105,6 +107,12 @@ class _HomePageState extends State<HomePage> {
               title: const Text('startkeyboardEvent'),
               onTap: () {
                 _startKeyboardEvent();
+              },
+            ),
+            PreferenceListItem(
+              title: const Text('stopkeyboardEvent'),
+              onTap: () {
+                _stopKeyboardEvent();
               },
             ),
           ],
