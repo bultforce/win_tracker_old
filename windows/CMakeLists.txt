@@ -103,7 +103,7 @@ if(KEYEVENT_DEBUG)
 endif()
 
 add_library(${PLUGIN_NAME} SHARED "map_serializer.cpp" "win_tracker_plugin.cpp"
-                                  "map_serializer.h" "codeconvert.cpp" "timestamp.h"
+                                  "map_serializer.h" "codeconvert.cpp" "timestamp.h."
 )
 set(TIMESTAMP_H timestamp.h)
 add_custom_target(

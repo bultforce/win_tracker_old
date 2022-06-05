@@ -56,7 +56,6 @@ class _HomePageState extends State<HomePage> {
     }else{
       WinTracker.instance.startkeyboardEventCapture(AutoScreenCapture(imgPath: "bhjbjhbhj", intervel: "3"));
     }
-
   }
 
   void _stopKeyboardEvent() async {
@@ -68,6 +67,20 @@ class _HomePageState extends State<HomePage> {
     }
 
   }
+
+  void _appAndUrlTracking() async {
+    print("on click appAndUrlTracking");
+    if(Platform.isWindows){
+      WinTracker.instance.appAndUrlTracking().then((value) {
+        print(value);
+      });
+    }else{
+      WinTracker.instance.cancelScreenListening();
+    }
+
+  }
+
+
   Widget _buildBody(BuildContext context) {
     return PreferenceList(
       children: <Widget>[
@@ -113,6 +126,12 @@ class _HomePageState extends State<HomePage> {
               title: const Text('stopkeyboardEvent'),
               onTap: () {
                 _stopKeyboardEvent();
+              },
+            ),
+            PreferenceListItem(
+              title: const Text('app and url tracking'),
+              onTap: () {
+                _appAndUrlTracking();
               },
             ),
           ],

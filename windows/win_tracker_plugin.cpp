@@ -1,9 +1,12 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "include/win_tracker/win_tracker_plugin.h"
-
-// This must be included before many other Windows headers.
 #include <windows.h>
 #include <string>
-
+#include <WinUser.h>
+#include <codecvt>
+#include <uiautomation.h>
+#include <winapifamily.h>
+#define WIN32_LEAN_AND_MEAN
 #include <flutter/event_channel.h>
 #include <flutter/event_stream_handler_functions.h>
 #include <flutter/method_channel.h>
@@ -43,10 +46,12 @@
 #define error(...)
 #endif
 
+
 using namespace Gdiplus;
 using namespace std;
 using namespace flutter;
-
+IUIAutomation *pClientUIA;
+IUIAutomationElement *pRootElement;
 HHOOK kbdhook;
 
 void log_init() {
@@ -72,6 +77,7 @@ void log_init() {
 namespace {
 std::unique_ptr<flutter::MethodChannel<>> channel = NULL;
 std::unique_ptr<flutter::EventChannel<>> eventChannel = NULL;
+
 std::unique_ptr<EventSink<EncodableValue>> eventSink = NULL;
 
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
@@ -109,8 +115,8 @@ class WinTrackerPlugin : public flutter::Plugin {
    void SaveClipboardImageAsPngFile(
         const flutter::MethodCall<flutter::EncodableValue> &method_call,
         std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
-  WinTrackerPlugin();
 
+  WinTrackerPlugin(flutter::PluginRegistrarWindows *registrar);
   virtual ~WinTrackerPlugin();
 
  private:
@@ -119,8 +125,10 @@ class WinTrackerPlugin : public flutter::Plugin {
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue> &method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+  flutter::PluginRegistrarWindows *registrar_;
   static const char kOnLogCallbackMethod[];
   static const char kGetVirtualKeyMapMethod[];
+
   #ifdef KEYEVENT_DEBUG
     UINT _codePage;
   #endif
@@ -193,7 +201,8 @@ void KeyboardHookEnable(std::unique_ptr<EventSink<T>> &&events) {
   kbdhook = SetWindowsHookEx(WH_MOUSE_LL, llKeyboardProc, hInstance, NULL);
 }
 
-void KeyboardHookDisable() {
+void KeyboardHookDisable(
+) {
   if (kbdhook) {
     UnhookWindowsHookEx(kbdhook);
     kbdhook = NULL;
@@ -236,7 +245,7 @@ void WinTrackerPlugin::RegisterWithRegistrar(
       registrar->messenger(), "win_tracker",
       &flutter::StandardMethodCodec::GetInstance(
           &MapSerializer::GetInstance()));
-  auto plugin = std::make_unique<WinTrackerPlugin>();
+  auto plugin = std::make_unique<WinTrackerPlugin>(registrar);
   channel->SetMethodCallHandler(
       [plugin_pointer = plugin.get()](const auto &call, auto result) {
         plugin_pointer->HandleMethodCall(call, std::move(result));
@@ -255,9 +264,12 @@ void WinTrackerPlugin::RegisterWithRegistrar(
   eventChannel->SetStreamHandler(std::move(KeyboardEventStreamHandler));
 
   registrar->AddPlugin(std::move(plugin));
+
 }
 
-WinTrackerPlugin::WinTrackerPlugin() {
+WinTrackerPlugin::WinTrackerPlugin(flutter::PluginRegistrarWindows *registrar) 
+    : registrar_(registrar) 
+{
 #ifdef KEYEVENT_DEBUG
   _codePage = getCodePage();
 #endif
@@ -265,7 +277,7 @@ WinTrackerPlugin::WinTrackerPlugin() {
   log_init();
   }
 
-WinTrackerPlugin::~WinTrackerPlugin() { KeyboardHookDisable(); }
+WinTrackerPlugin::~WinTrackerPlugin(){ KeyboardHookDisable(); }
 
 void WinTrackerPlugin::HandleMethodCall(
     const flutter::MethodCall<flutter::EncodableValue> &method_call,
@@ -285,10 +297,44 @@ void WinTrackerPlugin::HandleMethodCall(
        } else {
          result->Success(CustomEncodableValue(MapData(virtualKeyCode2NameMap)));
        }
-     } else {
+     } 
+  else if (method_call.method_name().compare("appAndUrlTracking")== 0) {
+    std::ostringstream version_stream;
+  HWND hCurWnd = ::GetForegroundWindow();
+
+     int len = GetWindowTextLength(hCurWnd) + 1;
+     vector<wchar_t> buf(len);
+     int lenght =  GetWindowText(hCurWnd, &buf[0], len);;
+        if((lenght == 0) == FALSE){
+            wstring ws = &buf[0];
+            std::wcout<<"std::wstring =    "<<ws<<std::endl;
+            std::string s((const char*)&ws[0], sizeof(wchar_t)/sizeof(char)*ws.size());
+            version_stream << s;
+            std::cout<<"std::wstring =    "<<s.c_str()<<"\n";
+            result->Success(flutter::EncodableValue(version_stream.str()));
+        }else{
+            version_stream << "8";
+              result->Success(flutter::EncodableValue(version_stream.str()));
+        }
+
+  }
+  else {
     result->NotImplemented();
   }
 }
+
+
+std::wstring s2ws(const std::string& s) {
+    int len;
+    int slength = (int)s.length() + 1;
+    len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+    wchar_t* buf = new wchar_t[len];
+    MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+     std::wstring r(buf);
+    delete[] buf;
+    return r;
+}
+
 std::string MBFromW(LPCWSTR pwsz, UINT cp) {
   int cch = WideCharToMultiByte(cp, 0, pwsz, -1, 0, 0, NULL, NULL);
 
@@ -310,6 +356,7 @@ std::string LPCTSTR_To_string(LPCTSTR str) {
   return std::string(str);
 #endif
 }
+
 void WinTrackerPlugin::showText(LPCTSTR text) {
   if (channel == NULL) return;
   auto *channel_pointer = channel.get();
@@ -360,6 +407,8 @@ void WinTrackerPlugin::showText(LPCTSTR text) {
 void showText(LPCTSTR text, int behavior) {
   WinTrackerPlugin::showText(text);
 }
+
+
 
 void WinTrackerPlugin::SaveClipboardImageAsPngFile(
     const flutter::MethodCall<flutter::EncodableValue>& method_call,

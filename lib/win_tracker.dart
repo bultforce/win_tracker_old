@@ -104,7 +104,9 @@ class WinTracker{
     optionMap.putIfAbsent("intervel", () => options.intervel);
     return await _channel.invokeMethod('keyboardEventCapture');
   }
-
+  Future<dynamic> appAndUrlTracking() async {
+    return await _channel.invokeMethod('appAndUrlTracking');
+  }
 
 
   startListening(Listener listener) async {
