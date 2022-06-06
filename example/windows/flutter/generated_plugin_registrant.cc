@@ -6,12 +6,9 @@
 
 #include "generated_plugin_registrant.h"
 
-#include <screen_capturer/screen_capturer_plugin.h>
 #include <win_tracker/win_tracker_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
-  ScreenCapturerPluginRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("ScreenCapturerPlugin"));
   WinTrackerPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("WinTrackerPlugin"));
 }

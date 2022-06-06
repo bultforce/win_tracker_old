@@ -108,6 +108,10 @@ class WinTracker{
     return await _channel.invokeMethod('appAndUrlTracking');
   }
 
+  Future<dynamic> brawserAndUrlTracking() async {
+    return await _channel.invokeMethod('brawserAndUrlTracking');
+  }
+
 
   startListening(Listener listener) async {
     var subscription =

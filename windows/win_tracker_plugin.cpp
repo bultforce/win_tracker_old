@@ -4,8 +4,13 @@
 #include <string>
 #include <WinUser.h>
 #include <codecvt>
+#include <algorithm>
+#include <comutil.h>
 #include <uiautomation.h>
 #include <winapifamily.h>
+#include <AtlBase.h>
+#include <AtlCom.h>
+#include <stdlib.h>
 #define WIN32_LEAN_AND_MEAN
 #include <flutter/event_channel.h>
 #include <flutter/event_stream_handler_functions.h>
@@ -45,7 +50,7 @@
 #define debug(...)
 #define error(...)
 #endif
-
+#pragma comment(lib,"comsuppw.lib")
 
 using namespace Gdiplus;
 using namespace std;
@@ -304,13 +309,19 @@ void WinTrackerPlugin::HandleMethodCall(
 
      int len = GetWindowTextLength(hCurWnd) + 1;
      vector<wchar_t> buf(len);
-     int lenght =  GetWindowText(hCurWnd, &buf[0], len);;
+     int lenght =  GetWindowText(hCurWnd, &buf[0], len);
         if((lenght == 0) == FALSE){
             wstring ws = &buf[0];
-            std::wcout<<"std::wstring =    "<<ws<<std::endl;
-            std::string s((const char*)&ws[0], sizeof(wchar_t)/sizeof(char)*ws.size());
-            version_stream << s;
-            std::cout<<"std::wstring =    "<<s.c_str()<<"\n";
+            std::wcout<<"std::wstring---0 =    "<<ws<<std::endl;
+    //        std::string s((const char*)&ws[0], sizeof(wchar_t)/sizeof(char)*ws.size());
+
+      //      std::cout<<"std::wstring----1 =    "<<s.c_str()<<"\n";
+            std::string str;
+            std::transform(ws.begin(), ws.end(), std::back_inserter(str), [] (wchar_t c) {
+                        return (char)c;
+                    });
+            std::cout << str << std::endl;
+            version_stream << str;
             result->Success(flutter::EncodableValue(version_stream.str()));
         }else{
             version_stream << "8";
@@ -318,6 +329,63 @@ void WinTrackerPlugin::HandleMethodCall(
         }
 
   }
+    else if (method_call.method_name().compare("brawserAndUrlTracking")== 0) {
+        std::ostringstream  resultstr;
+        CoInitialize(NULL);
+        HWND hCurWnd  = NULL;
+        while(true){
+       hCurWnd =::FindWindowEx(0, hCurWnd, L"Chrome_WidgetWin_1", NULL);
+
+            if (!hCurWnd){
+            cout << "hCurWnd==null--break"<< std::endl;
+            break;
+            }
+
+            if (!IsWindowVisible(hCurWnd)){
+            cout << "IsWindowVisible==contine" <<  std::endl;
+            continue;
+            }
+
+
+            CComQIPtr<IUIAutomation> uia;
+              if (FAILED(uia.CoCreateInstance(CLSID_CUIAutomation)) || !uia){
+            cout << "IUIAutomation==break" <<  std::endl;
+              break;
+              }
+        CComPtr<IUIAutomationElement> root;
+             if (FAILED(uia->ElementFromHandle(hCurWnd, &root)) || !root){
+             cout << "IUIAutomationElement==break" <<  std::endl;
+              break;
+             }
+
+           CComPtr<IUIAutomationCondition> condition;
+              uia->CreatePropertyCondition(UIA_ControlTypePropertyId,
+               CComVariant(0xC354), &condition);
+
+            CComPtr<IUIAutomationElement> edit;
+              if (FAILED(root->FindFirst(TreeScope_Descendants, condition, &edit))
+                || !edit){
+                cout << "TreeScope_Descendants==contnie" <<  std::endl;
+                 continue;
+                }
+
+
+               //maybe we don't have the right tab, continue...
+
+            CComVariant url;
+         edit->GetCurrentPropertyValue(UIA_ValueValuePropertyId, &url);
+          BSTR bhr = url.bstrVal;
+          if(bhr){
+          const std::string stdstr(_bstr_t(bhr, true));
+          cout << "GetCurrentPropertyValue----true" << endl;
+           std::cout << "value----"<<stdstr << std::endl;
+          }else{
+            cout << "bjbjhbjhbhjb----false" << endl;
+          }
+        }
+        result->Success(flutter::EncodableValue("resultstr.str()"));
+         CoUninitialize();
+    }
   else {
     result->NotImplemented();
   }

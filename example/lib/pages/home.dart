@@ -80,6 +80,19 @@ class _HomePageState extends State<HomePage> {
 
   }
 
+  void _brawserAndUrlTracking() async {
+    print("on click _brawserAndUrlTracking");
+    if(Platform.isWindows){
+      WinTracker.instance.brawserAndUrlTracking().then((value) {
+        print(value);
+      });
+    }else{
+      WinTracker.instance.cancelScreenListening();
+    }
+
+  }
+
+
 
   Widget _buildBody(BuildContext context) {
     return PreferenceList(
@@ -129,14 +142,24 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             PreferenceListItem(
-              title: const Text('app and url tracking'),
+              title: const Text('app tracking'),
               onTap: () {
-                _appAndUrlTracking();
+                Future.delayed(Duration(seconds: 5), (){
+                  _appAndUrlTracking();
+                });
               },
             ),
           ],
         ),
+        PreferenceListItem(
+          title: const Text('brawser and url tracking'),
+          onTap: () {
+            Future.delayed(Duration(seconds: 5), (){
+              _brawserAndUrlTracking();
+            });
 
+          },
+        ),
       ],
     );
   }

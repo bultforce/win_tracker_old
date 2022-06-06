@@ -13,9 +13,9 @@ dependencies:
 
   path_provider: ^2.0.8
   screenshot: ^1.2.3
-  screen_capturer: ^0.1.0
   bot_toast: ^4.0.1
   preference_list: ^0.0.1
+  win32: ^2.7.0
 
 
 dev_dependencies:
